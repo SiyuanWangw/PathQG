@@ -8,24 +8,24 @@ def importData(data_type=0, is_rm=True):
     if data_type == 0:
         ## training data
         files = (
-            './processed/SQuAD1.0/train/sentences.npy', './processed/SQuAD1.0/train/questions.npy',
+            './processed/SQuAD1.0/train/sentences.npz', './processed/SQuAD1.0/train/questions.npy',
             './processed/SQuAD1.0/train/answers.npy', './processed/SQuAD1.0/train/answers_start.npy')
     elif data_type == 1:
         ## validation date
         files = (
-            './processed/SQuAD1.0/val/sentences.npy', './processed/SQuAD1.0/val/questions.npy',
+            './processed/SQuAD1.0/val/sentences.npz', './processed/SQuAD1.0/val/questions.npy',
             './processed/SQuAD1.0/val/answers.npy', './processed/SQuAD1.0/val/answers_start.npy')
     else:
         ## test data
         if not is_rm:
             files = (
-                './processed/SQuAD1.0/test/sentences.npy', './processed/SQuAD1.0/test/questions.npy',
+                './processed/SQuAD1.0/test/sentences.npz', './processed/SQuAD1.0/test/questions.npy',
                 './processed/SQuAD1.0/test/answers.npy', './processed/SQuAD1.0/test/answers_start.npy')
         else:
             files = (
-                './processed/SQuAD1.0/test/rm_sentences.npy', './processed/SQuAD1.0/test/rm_questions.npy',
+                './processed/SQuAD1.0/test/rm_sentences.npz', './processed/SQuAD1.0/test/rm_questions.npy',
                 './processed/SQuAD1.0/test/rm_answers.npy', './processed/SQuAD1.0/test/rm_answers_start.npy')
-    sentences = np.load(os.path.join(dataroot, files[0]))
+    sentences = np.load(os.path.join(dataroot, files[0]))['sent']
     questions = np.load(os.path.join(dataroot, files[1]))
     answers = np.load(os.path.join(dataroot, files[2]))
     answers_start = np.load(os.path.join(dataroot, files[3]))

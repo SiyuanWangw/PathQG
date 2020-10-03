@@ -186,7 +186,7 @@ def match_sentences_qa(src, tgt, answers_list, index_list, limit_length=100):
 
 
 def calculate_sentences_length():
-    sentences = np.load('../processed/SQuAD1.0/train/sentences.npy')
+    sentences = np.load('../processed/SQuAD1.0/train/sentences.npz')['sent']
     num_30, num_50, num_80, num_100, num_more = 0, 0, 0, 0, 0
     for each_sentence in sentences:
         each_length = len(nltk.word_tokenize(each_sentence))
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     qa_dict_train = extract_qas(type=0)
     answers_list_train, index_list_train = map_answers(qa_dict_train, type=0)
     sentences, questions, answers, answers_start = match_sentences_qa(src_train, tgt_train, answers_list_train, index_list_train)
-    np.save('../processed/SQuAD1.0/train/sentences', sentences)
+    np.savez_compressed('../processed/SQuAD1.0/train/sentences', sent=sentences)
     np.save('../processed/SQuAD1.0/train/questions', questions)
     np.save('../processed/SQuAD1.0/train/answers', answers)
     np.save('../processed/SQuAD1.0/train/answers_start', answers_start)
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     qa_dict_val = extract_qas(type=1)
     answers_list_val, index_list_val = map_answers(qa_dict_val, type=1)
     sentences, questions, answers, answers_start = match_sentences_qa(src_dev, tgt_dev, answers_list_val, index_list_val)
-    np.save('../processed/SQuAD1.0/val/sentences', sentences)
+    np.savez_compressed('../processed/SQuAD1.0/val/sentences', sent=sentences)
     np.save('../processed/SQuAD1.0/val/questions', questions)
     np.save('../processed/SQuAD1.0/val/answers', answers)
     np.save('../processed/SQuAD1.0/val/answers_start', answers_start)
@@ -276,7 +276,7 @@ if __name__ == '__main__':
     qa_dict_test = extract_qas(type=2)
     answers_list_test, index_list_test = map_answers(qa_dict_test, type=2)
     sentences, questions, answers, answers_start = match_sentences_qa(src_test, tgt_test, answers_list_test, index_list_test)
-    np.save('../processed/SQuAD1.0/test/sentences', sentences)
+    np.savez_compressed('../processed/SQuAD1.0/test/sentences', sent=sentences)
     np.save('../processed/SQuAD1.0/test/questions', questions)
     np.save('../processed/SQuAD1.0/test/answers', answers)
     np.save('../processed/SQuAD1.0/test/answers_start', answers_start)
