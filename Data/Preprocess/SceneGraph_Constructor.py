@@ -43,30 +43,6 @@ def construct(data_type=0):
     fw.close()
 
 
-def get_wiki_entities_span_bounds(data_type=0):
-    sentences, _, _, _ = importData(data_type=data_type)
-    entities, entities_location, entities_type = import_entity_data(data_type=data_type, is_connected=False)
-
-    entities_span_bounds = list()
-    for i in tqdm(range(len(entities))):
-        cur_sent_entities_span_bounds = list()
-        for j in range(len(entities[i])):
-            start_index, end_index = entities_location[i][j]
-            lower_bound = len(nltk.word_tokenize(sentences[i][:start_index]))
-            upper_bound = len(nltk.word_tokenize(sentences[i][:end_index]))
-            cur_sent_entities_span_bounds.append((lower_bound, upper_bound))
-        entities_span_bounds.append(cur_sent_entities_span_bounds)
-
-    if data_type == 0:
-        save_span_bounds_file = './processed/SQuAD1.0/train/entity_span_bounds'
-    elif data_type == 1:
-        save_span_bounds_file = './processed/SQuAD1.0/val/entity_span_bounds'
-    else:
-        save_span_bounds_file = './processed/SQuAD1.0/test/entity_span_bounds'
-
-    np.save(os.path.join(dataroot, save_span_bounds_file), entities_span_bounds)
-
-
 def reverse_index(l, obj):
     n = len(l)
     while n > 0:
@@ -262,7 +238,7 @@ def enrich_graphs(data_type=0):
 
     total_added_edges_num = 0
     sentences, questions, _, _ = importData(data_type=data_type)
-    entities, _, entities_span_bounds, entities_type = import_entity_data(data_type=data_type, is_connected=True, is_span_bounds=True)
+    # entities, _, entities_span_bounds, entities_type = import_entity_data(data_type=data_type, is_connected=True, is_span_bounds=True)
     for i in tqdm(range(len(graphs))):
         each_graph = graphs[i]
         sent_words_list = nltk.word_tokenize(sentences[i])
@@ -270,13 +246,7 @@ def enrich_graphs(data_type=0):
         cur_edge_num = len(each_graph.edge_list)
 
         for j, each_graph_node in enumerate(each_graph.node_list):
-            # enrich node type
             cur_node_span_bounds = each_graph_node.nodespan_bounds
-            for k in range(len(entities_span_bounds[i])):
-                ref_entity_span_bounds = entities_span_bounds[i][k]
-                if cur_node_span_bounds[0] <= ref_entity_span_bounds[0] and \
-                    cur_node_span_bounds[1] >= ref_entity_span_bounds[1]:
-                    each_graph_node.set_type(entities_type[i][k])
 
             # enrich edges
             if j == 0 and (each_graph_node.nodetype == 'DATE' or each_graph_node.nodetype == 'TIME'):
@@ -291,7 +261,6 @@ def enrich_graphs(data_type=0):
                             each_graph.extend_graph_edge(relationText, relationType, each_graph.node_list[j+1], each_graph.node_list[j])
             elif j < len(each_graph.node_list) - 1:
                 if each_graph.get_edge_by_index(j, j+1) is None:
-                    # print(each_graph.node_list[j].nodetext, '\t', each_graph.node_list[j + 1].nodetext)
                     if '-' not in sentences[i]:
                         start_index = cur_node_span_bounds[1]
                         end_index = each_graph.node_list[j+1].nodespan_bounds[0]
@@ -302,7 +271,6 @@ def enrich_graphs(data_type=0):
                     relation = extract_relation(sent_words_list[start_index: end_index],
                                                                   pos_taggings[start_index: end_index])
                     if relation is not None:
-                        # print(j, relation)
                         relationText, relationType = relation
                         each_graph.extend_graph_edge(relationText, relationType, each_graph.node_list[j], each_graph.node_list[j+1])
 
@@ -323,16 +291,12 @@ def enrich_graphs(data_type=0):
 
 
 if __name__ == '__main__':
-    # construct(data_type=0)
-    # construct(data_type=1)
-    # construct(data_type=2)
-    #
-    # get_wiki_entities_span_bounds(data_type=0)
-    # get_wiki_entities_span_bounds(data_type=1)
-    # get_wiki_entities_span_bounds(data_type=2)
-    #
-    # enrich_graphs(data_type=0)
-    # enrich_graphs(data_type=1)
-    # enrich_graphs(data_type=2)
+    construct(data_type=0)
+    construct(data_type=1)
+    construct(data_type=2)
+
+    enrich_graphs(data_type=0)
+    enrich_graphs(data_type=1)
+    enrich_graphs(data_type=2)
 
     pass

@@ -24,12 +24,12 @@ def extract_qas(type=0):
                 each_para_qas = each_paragraph['qas']
                 for k in range(len(each_para_qas)):
                     cur_qa = each_para_qas[k]
-                    question = cur_qa['question'].strip()
-                    # question = cur_qa['question'].strip().lower()
+                    # question = cur_qa['question'].strip()
+                    question = cur_qa['question'].strip().lower()
                     question = process_sentence(question)
 
-                    answer = cur_qa['answers'][0]['text']
-                    # answer = cur_qa['answers'][0]['text'].lower()
+                    # answer = cur_qa['answers'][0]['text']
+                    answer = cur_qa['answers'][0]['text'].lower()
                     answer = process_sentence(answer)
                     qa_dict[question] = answer
         return qa_dict
@@ -154,14 +154,11 @@ def map_answers(qa_pairs ,type = 0):
     index = 0
     with open(tgt_file, "r", ) as f:
         for line in f.readlines():
-            try:
-                content = line.strip().lower()
-                if content in qa_pairs:
-                    answers.append(qa_pairs[content])
-                    index_list.append(index)
-                index += 1
-            except ValueError:
-                pass
+            content = line.strip().lower()
+            if content in qa_pairs:
+                answers.append(qa_pairs[content])
+                index_list.append(index)
+            index += 1
         return answers, index_list
 
 
@@ -245,6 +242,7 @@ def calculate_distribution():
 
 if __name__ == '__main__':
     src_train, src_dev, src_test, tgt_train, tgt_dev, tgt_test = importData()
+    print(len(src_train), len(tgt_train), len(src_dev))
 
     # training data
     qa_dict_train = extract_qas(type=0)
@@ -254,6 +252,7 @@ if __name__ == '__main__':
     np.save('../processed/SQuAD1.0/train/questions', questions)
     np.save('../processed/SQuAD1.0/train/answers', answers)
     np.save('../processed/SQuAD1.0/train/answers_start', answers_start)
+    print(sentences[0])
     print(len(sentences), len(answers), len(answers_start), len(questions))
     print(sum(list(map(len, questions))), sum(list(map(len, answers))), sum(list(map(len, answers_start))))
     calculate_sentences_length()
