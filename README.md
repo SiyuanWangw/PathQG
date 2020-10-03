@@ -47,4 +47,4 @@ Here * means that corresponding model, for example, **PathQG_Solver.py** is the 
 * **Evaluator** contains scripts to calculate the evaluation metrics;
 
 ## Constructed KG
-The constructed Knowledge Graphs by SceneGraph Parser is provided in the directory **Data/processed/SQuAD1.0/Graph_Analysis/#**, here # means **train**, **val** or **test**.
+The constructed Knowledge Graphs by SceneGraph Parser is provided in the directory **Data/processed/SQuAD1.0/Graph_Analysis/#**, here **#** means **train**, **val** or **test**.
