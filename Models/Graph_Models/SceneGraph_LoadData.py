@@ -983,103 +983,6 @@ def split_long_short_path_length_data(data_type=0):
     np.save(os.path.join(dataroot, long_short_data_tag_file), long_short_data_tag)
 
 
-def get_long_data(data_type=0, is_save=False):
-    prestr = 'extended_'
-
-    if data_type == 0:
-        long_text_files = (
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/sentences.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/questions.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/answers.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/answers_start.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/nodes.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/edges.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/adjacency.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/nodes_type.npy')
-        graph_file = ('./processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/' + prestr + 'question_node_path.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/' + prestr + 'question_edge_path.npy')
-        long_graph_file = ('./processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/' + prestr + 'question_node_path.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/train/' + prestr + 'question_edge_path.npy')
-        long_data_tag_file = './processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/long_data_tag.npy'
-    elif data_type == 1:
-        long_text_files = (
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/sentences.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/questions.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/answers.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/answers_start.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/nodes.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/edges.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/adjacency.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/nodes_type.npy')
-        graph_file = ('./processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/' + prestr + 'question_node_path.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/' + prestr + 'question_edge_path.npy')
-        long_graph_file = ('./processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/' + prestr + 'question_node_path.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/val/' + prestr + 'question_edge_path.npy')
-        long_data_tag_file = './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/long_data_tag.npy'
-    else:
-        long_text_files = (
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/sentences.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/questions.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/answers.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/answers_start.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/nodes.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/edges.npy',
-            './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/adjacency.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/nodes_type.npy')
-        graph_file = ('./processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/' + prestr + 'question_node_path.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/' + prestr + 'question_edge_path.npy')
-        long_graph_file = ('./processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/' + prestr + 'question_node_path.npy', './processed/SQuAD1.0/Graph_Analysis/SceneGraph/long/test/' + prestr + 'question_edge_path.npy')
-        long_data_tag_file = './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/long_data_tag.npy'
-
-    if is_save:
-        sentences, questions, answers, answers_start = importData(data_type=data_type)
-        all_sent_nodes, all_sent_nodes_type, all_sent_edges, all_sent_adjacency = import_graph_node_edge(data_type=data_type)
-        long_data_tag = np.load(os.path.join(dataroot, long_data_tag_file))
-        question_node_path = np.load(os.path.join(dataroot, graph_file[0]))
-        question_edge_path = np.load(os.path.join(dataroot, graph_file[1]))
-
-        long_sentences, long_questions, long_answers, long_answers_start, long_all_nodes, long_all_nodes_type, long_all_edges, long_all_adjacency = list(), list(), list(), list(), list(), list(), list(), list()
-        long_node_paths, long_edge_paths = list(), list()
-
-        for i in range(len(sentences)):
-            cur_sent_long_ques = list()
-            cur_sent_long_answer = list()
-            cur_sent_long_answer_start = list()
-            cur_sent_long_node_path = list()
-            cur_sent_long_edge_path = list()
-
-            for j in range(len(questions[i])):
-                if long_data_tag[i][j] == 1:
-                    cur_sent_long_ques.append(questions[i][j])
-                    cur_sent_long_answer.append(answers[i][j])
-                    cur_sent_long_answer_start.append(answers_start[i][j])
-                    cur_sent_long_node_path.append(question_node_path[i][j])
-                    cur_sent_long_edge_path.append(question_edge_path[i][j])
-
-            if len(cur_sent_long_ques) > 0:
-                long_sentences.append(sentences[i])
-                long_questions.append(cur_sent_long_ques)
-                long_answers.append(cur_sent_long_answer)
-                long_answers_start.append(cur_sent_long_answer_start)
-                long_all_nodes.append(all_sent_nodes[i])
-                long_all_nodes_type.append(all_sent_nodes_type[i])
-                long_all_edges.append(all_sent_edges[i])
-                long_all_adjacency.append(all_sent_adjacency[i])
-                long_node_paths.append(cur_sent_long_node_path)
-                long_edge_paths.append(cur_sent_long_edge_path)
-
-        print(long_node_paths[0])
-        print(long_edge_paths[0])
-        print('*'*100)
-
-        print(sum([len(each) for each in long_questions]))
-        np.save(os.path.join(dataroot, long_text_files[0]), np.array(long_sentences))
-        np.save(os.path.join(dataroot, long_text_files[1]), np.array(long_questions))
-        np.save(os.path.join(dataroot, long_text_files[2]), np.array(long_answers))
-        np.save(os.path.join(dataroot, long_text_files[3]), np.array(long_answers_start))
-        np.save(os.path.join(dataroot, long_text_files[4]), np.array(long_all_nodes))
-        np.save(os.path.join(dataroot, long_text_files[7]), np.array(long_all_nodes_type))
-        np.save(os.path.join(dataroot, long_text_files[5]), np.array(long_all_edges))
-        np.save(os.path.join(dataroot, long_text_files[6]), np.array(long_all_adjacency))
-        np.save(os.path.join(dataroot, long_graph_file[0]), np.array(long_node_paths))
-        np.save(os.path.join(dataroot, long_graph_file[1]), np.array(long_edge_paths))
-
-    else:
-        long_sentences = np.load(os.path.join(dataroot, long_text_files[0]))
-        long_questions = np.load(os.path.join(dataroot, long_text_files[1]))
-        long_answers = np.load(os.path.join(dataroot, long_text_files[2]))
-        long_answers_start = np.load(os.path.join(dataroot, long_text_files[3]))
-        long_all_nodes = np.load(os.path.join(dataroot, long_text_files[4]))
-        long_all_edges = np.load(os.path.join(dataroot, long_text_files[5]))
-        long_all_adjacency = np.load(os.path.join(dataroot, long_text_files[6]))
-        long_all_nodes_type = np.load(os.path.join(dataroot, long_text_files[7]))
-
-        return long_sentences, long_questions, long_answers, long_answers_start, long_all_nodes, long_all_edges, long_all_adjacency, long_all_nodes_type
-
-
 def spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, questions, is_path=False, all_nodes_type_vector=None, answer_vector=None, sentences=None):
     # spread the all vector for each sentence
     spread_all_vector_src = list()
@@ -1824,29 +1727,6 @@ def analyse_graph():
     print('average quantity of facts', np.mean(all_sent_triple_numbers))
     print('average quantity of entities', np.mean(all_sent_entity_numbers))
     print('average coverage rate', np.mean(all_sent_overlap_rate))
-
-
-def get_question_length(is_long=False):
-    if is_long:
-        train_sentences, train_questions, _, _, _, _, _, _ = get_long_data(data_type=0, is_save=False)
-        val_sentences, val_questions, _, _, _, _, _, _ = get_long_data(data_type=1, is_save=False)
-        test_sentences, test_questions, _, _, _, _, _, _ = get_long_data(data_type=2, is_save=False)
-    else:
-        train_sentences, train_questions, _, _ = importData(data_type=0)
-        val_sentences, val_questions, _, _ = importData(data_type=1)
-        test_sentences, test_questions, _, _ = importData(data_type=2)
-
-    all_sentences = train_sentences.tolist() + val_sentences.tolist() + test_sentences.tolist()
-    all_questions = train_questions.tolist() + val_questions.tolist() + test_questions.tolist()
-
-    all_sentence_lengths = list()
-    all_question_lengths = list()
-    for i in range(len(all_sentences)):
-        all_sentence_lengths.append(len(nltk.word_tokenize(all_sentences[i])))
-        for j in range(len(all_questions[i])):
-            all_question_lengths.append(len(nltk.word_tokenize(all_questions[i][j])))
-    print(np.mean(all_sentence_lengths))
-    print(np.mean(all_question_lengths))
 
 
 if __name__ == '__main__':
