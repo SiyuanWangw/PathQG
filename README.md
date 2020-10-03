@@ -45,3 +45,6 @@ Here * means that corresponding model, for example, **PathQG_Solver.py** is the 
 * **Models** is composed of different models and their solver (trainer and test);
 * **Model_Data** saves the trained model files; 
 * **Evaluator** contains scripts to calculate the evaluation metrics;
+
+## Constructed KG
+The constructed Knowledge Graphs by SceneGraph Parser is provided in the directory **Data/processed/SQuAD1.0/Graph_Analysis/#**, here # means **train**, **val** or **test**.
