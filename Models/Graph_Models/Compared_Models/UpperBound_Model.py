@@ -113,7 +113,6 @@ class Generator(nn.Module):
             concat_output = torch.cat([h_t.unsqueeze(1), cur_context_1], -1)
             cur_context = cur_context_1.squeeze(1)
 
-
             tanh_fc = F.relu(self.dense(concat_output))
             logit = self.out(tanh_fc)
 
@@ -124,16 +123,28 @@ class Generator(nn.Module):
         logits = torch.cat(logits, 1)
         return logits
 
-    def test_decoder(self, cur_input, init_hidden):
-        input_embed = self.dropout(self.tgt_embedding(cur_input))
-        h_t, c_t = self.decoder_lstm_cell(input_embed, init_hidden)
-        h_t = self.dropout(h_t)
-        init_hidden = (h_t, c_t)
-
-        if h_t.size(0) == self.args.batch_size:
+    def test_decoder(self, cur_input, init_hidden, t):
+        if cur_input.size(0) == self.args.batch_size:
             encoder_outputs = self.encode_outputs
         else:
             encoder_outputs = torch.cat([self.encode_outputs.unsqueeze(1),]*self.args.beam_size, 1).view(-1, self.encode_outputs.size(1), self.encode_outputs.size(2))
+
+        if t == 0:
+            cur_context = Variable(
+                init_hidden[0].data.new(cur_input.size(0), self.args.encoder_hidden_size*2).zero_(),
+                requires_grad=False)
+        else:
+            _, cur_context_1 = self.sentence_attn(init_hidden[0], encoder_outputs)
+            cur_context = cur_context_1.squeeze(1)
+
+        if not self.args.attn_input_feed:
+            input_embed = self.dropout(self.tgt_embedding(cur_input))
+        else:
+            input_embed = self.dropout(torch.cat([self.tgt_embedding(cur_input), cur_context], -1))
+
+        h_t, c_t = self.decoder_lstm_cell(input_embed, init_hidden)
+        h_t = self.dropout(h_t)
+        init_hidden = (h_t, c_t)
 
         alpha_1, cur_context_1 = self.sentence_attn(h_t, encoder_outputs)
         concat_output = torch.cat([h_t.unsqueeze(1), cur_context_1], -1)
@@ -183,7 +194,7 @@ class BeamSearch(object):
         output_list = []
         for i in range(length):
             self.time = i
-            word_prob, next_state = cell(word, state)
+            word_prob, next_state = cell(word, state, self.time)
             word, state = self.step(next_state, word_prob)
             word_list.append(word)
         word = self.get_output_words(word_list)

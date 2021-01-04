@@ -35,8 +35,10 @@ def init_args():
     parser.add_argument('--distance_tag_num', type=int, default=6, help='number of distance tag')
     parser.add_argument('--num_layers', type=int, default=1, help='number of LSTM layers')
     parser.add_argument('--keep_neighbor_distance', type=int, default=2, help='only attention to neighbors in distance')
+    parser.add_argument('--beta_param', type=float, default=0.1, help='parameter beta')
+    parser.add_argument('--lambda_param', type=float, default=0.5, help='parameter lambda')
 
-    parser.add_argument('--attn_input_feed', type=bool, default=False, help='feed attn context into input')
+    parser.add_argument('--attn_input_feed', type=bool, default=True, help='feed attn context into input')
     parser.add_argument('--batch_size', type=int, default=64, help='batch size')
     parser.add_argument('--num_epoches', type=int, default=20, help='number of epoches')
     parser.add_argument('--selection_num_epoches', type=int, default=20, help='number of epoches')
