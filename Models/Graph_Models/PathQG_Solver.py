@@ -6,7 +6,7 @@ import torch.optim as optim
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-from Our_Models.PathQG_Model import Generator  # PathQG
+from Our_Models.PathQG_Model_v2 import Generator  # PathQG
 import sys
 sys.path.append('..')
 sys.path.append('../..')
@@ -55,7 +55,8 @@ class Generator_Solver(object):
         best_score = 0
         best_epoch = 0
 
-        beta = 0.1
+        # beta = 0.1
+        beta = self.args.beta_param
 
         for epoch in range(self.args.num_epoches):
             # load data
@@ -65,7 +66,7 @@ class Generator_Solver(object):
             input_answer_tagging_batches, input_end_tagging_batches, \
             input_path_tagging_batches, _, valid_node_label_batches, input_decode_batches, \
             _, target_decode_batches, input_decode_lengths, input_nodes_type_batches, \
-            _, _, nodes_edges_subpaths_batches = get_path_train_data_each_epoch(params, is_shuffle=True)
+            input_answer_batches, input_answer_lengthes, nodes_edges_subpaths_batches = get_path_train_data_each_epoch(params, is_shuffle=True)
 
             print('epoch:', epoch, ', learning rate:', optimizer.param_groups[0]['lr'])
             n_chunk = len(all_vector_src) // self.args.batch_size
@@ -82,6 +83,8 @@ class Generator_Solver(object):
                 tgt_target = Variable(torch.from_numpy(target_decode_batches[batch])).long()
                 tgt_input_length = Variable(torch.from_numpy(input_decode_lengths[batch])).long()
                 target_valid_node_label = Variable(torch.from_numpy(valid_node_label_batches[batch])).long()
+                answer_input = Variable(torch.from_numpy(input_answer_batches[batch])).long()
+                answer_input_length = Variable(torch.from_numpy(input_answer_lengthes[batch])).long()
 
                 if self.args.cuda:
                     src_input = src_input.cuda()
@@ -95,11 +98,13 @@ class Generator_Solver(object):
                     tgt_target = tgt_target.cuda()
                     target_valid_node_label = target_valid_node_label.cuda()
                     tgt_input_length = tgt_input_length.cuda()
+                    answer_input = answer_input.cuda()
+                    answer_input_length = answer_input_length.cuda()
 
                 # PathQG Model
                 logits, selection_logits_1 = model(src_input, src_input_length, answer_tagging_input,
                                                     end_tagging_input, node_input,
-                                                    node_type_input, edge_input,
+                                                    answer_input, answer_input_length,
                                                     tgt_input, tgt_input_length)
 
                 qg_loss = criterion(logits.view(-1, logits.shape[2]), tgt_target.view(-1)).view(self.args.batch_size, -1)
@@ -162,7 +167,7 @@ class Test(object):
             self.input_answer_tagging_batches, self.input_end_tagging_batches, \
             self.input_path_tagging_batches, _, self.valid_node_label_batches, self.input_decode_batches, \
             self.all_questions, self.input_decode_lengths, self.input_nodes_type_batches, \
-            _, _, self.nodes_edges_subpaths_batches = get_path_val_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
+            self.input_answer_batches, self.input_answer_lengthes, self.nodes_edges_subpaths_batches = get_path_val_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
             self.long_data_indexes = np.load(
                 os.path.join(dataroot,
                              './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/long_data_piece_index.npy')).tolist()
@@ -174,7 +179,7 @@ class Test(object):
             self.input_answer_tagging_batches, self.input_end_tagging_batches, \
             self.input_path_tagging_batches, _, self.valid_node_label_batches, self.input_decode_batches, \
             self.all_questions, self.input_decode_lengths, self.input_nodes_type_batches, \
-            _, self.spread_spice_ref_questions, self.all_sentences, self.nodes_edges_subpaths_batches = get_path_test_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
+            self.input_answer_batches, self.spread_spice_ref_questions, self.all_sentences, self.input_answer_lengthes = get_path_test_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
             self.file = os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/selected_path_extend_3.npy')
             self.long_data_indexes = np.load(
                 os.path.join(dataroot,
@@ -324,6 +329,8 @@ class Test(object):
             tgt_input = Variable(torch.from_numpy(self.input_decode_batches[batch])).long()
             tgt_input_length = Variable(torch.from_numpy(self.input_decode_lengths[batch])).long()
             target_valid_node_label = Variable(torch.from_numpy(self.valid_node_label_batches[batch])).long()
+            answer_input = Variable(torch.from_numpy(self.input_answer_batches[batch])).long()
+            answer_input_length = Variable(torch.from_numpy(self.input_answer_lengthes[batch])).long()
 
             if self.args.cuda:
                 src_input = src_input.cuda()
@@ -336,14 +343,14 @@ class Test(object):
                 tgt_input = tgt_input.cuda()
                 tgt_input_length = tgt_input_length.cuda()
                 target_valid_node_label = target_valid_node_label.cuda()
+                answer_input = answer_input.cuda()
+                answer_input_length = answer_input_length.cuda()
 
             if self.args.beam_size > 1:
                 # beam search
-                pre_index, selection_logits = model(src_input, src_input_length, answer_tagging_input, end_tagging_input, node_input, node_type_input,
-                                        edge_input, tgt_input, tgt_input_length)
+                pre_index, selection_logits = model(src_input, src_input_length, answer_tagging_input, end_tagging_input, node_input, answer_input, answer_input_length, tgt_input, tgt_input_length)
             else:
-                logits, selection_logits = model(src_input, src_input_length, answer_tagging_input, end_tagging_input, node_input, node_type_input,
-                                        edge_input, tgt_input, tgt_input_length)
+                logits, selection_logits = model(src_input, src_input_length, answer_tagging_input, end_tagging_input, node_input, answer_input, answer_input_length, tgt_input, tgt_input_length)
                 pre_index = torch.max(logits, -1)[1]
 
             for i in range(pre_index.size(0)):
@@ -406,10 +413,10 @@ if __name__ == '__main__':
     inited_args.src_vocab_size = len(vocabulary_src)
     inited_args.tgt_vocab_size = len(vocabulary_tgt)
 
-    trainer = Generator_Solver(inited_args, vocabulary_src, vocabulary_tgt)
+    # trainer = Generator_Solver(inited_args, vocabulary_src, vocabulary_tgt)
     evaluator = Test(inited_args, vocabulary_src, vocabulary_tgt, is_test=True)
 
-    trainer.train()
+    # trainer.train()
     evaluator.evaluate()
 
     print(evaluator.args.QG_model_file)

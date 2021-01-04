@@ -55,8 +55,10 @@ class Generator_Solver(object):
         best_score = 0
         best_epoch = 0
 
-        lam = 0.5
-        beta = 0.1
+        # lam = 0.5
+        # beta = 0.1
+        lam = self.args.lambda_param
+        beta = self.args.beta_param
 
         for epoch in range(self.args.num_epoches):
             # load data
@@ -113,6 +115,10 @@ class Generator_Solver(object):
                 selection_mask = torch.sign(torch.sum(node_input, -1)).float()
                 selection_loss_1 = torch.sum(selection_mask.mul(selection_loss_1)) / torch.sum(selection_mask)
 
+                selection_loss_2 = criterion(selection_logits_2.view(-1, selection_logits_2.shape[2]), target_valid_node_label.view(-1)).view(
+                    self.args.batch_size, -1)
+                selection_loss_2 = torch.sum(selection_mask.mul(selection_loss_2)) / torch.sum(selection_mask)
+
                 KL_loss = torch.mean(KL_loss)
 
                 reg_loss = 0
@@ -121,6 +127,8 @@ class Generator_Solver(object):
                         reg_loss += self.args.l1_reg * param.abs().sum() + self.args.l2_reg * (param.pow(2)).sum()
 
                 loss = qg_loss + beta * selection_loss_1 + lam * KL_loss + reg_loss
+                # loss = qg_loss + beta * selection_loss_2 + lam * KL_loss + reg_loss
+                # loss = qg_loss + beta * (selection_loss_2 + selection_loss_1) + lam * KL_loss + reg_loss
 
                 optimizer.zero_grad()
                 loss.backward()

@@ -18,7 +18,7 @@ import time
 start = time.time()
 
 
-def importData(data_type=0):
+def importData(data_type=0, is_rm=True):
     if data_type == 0:
         ## training data
         files = (
@@ -31,12 +31,14 @@ def importData(data_type=0):
             './processed/SQuAD1.0/val/answers.npy', './processed/SQuAD1.0/val/answers_start.npy')
     else:
         ## test data
-        # files = (
-        #     './processed/SQuAD1.0/test/sentences.npz', './processed/SQuAD1.0/test/questions.npy',
-        #     './processed/SQuAD1.0/test/answers.npy', './processed/SQuAD1.0/test/answers_start.npy')
-        files = (
-            './processed/SQuAD1.0/test/rm_sentences.npz', './processed/SQuAD1.0/test/rm_questions.npy',
-            './processed/SQuAD1.0/test/rm_answers.npy', './processed/SQuAD1.0/test/rm_answers_start.npy')
+        if not is_rm:
+            files = (
+                './processed/SQuAD1.0/test/sentences.npz', './processed/SQuAD1.0/test/questions.npy',
+                './processed/SQuAD1.0/test/answers.npy', './processed/SQuAD1.0/test/answers_start.npy')
+        else:
+            files = (
+                './processed/SQuAD1.0/test/rm_sentences.npz', './processed/SQuAD1.0/test/rm_questions.npy',
+                './processed/SQuAD1.0/test/rm_answers.npy', './processed/SQuAD1.0/test/rm_answers_start.npy')
     sentences = np.load(os.path.join(dataroot, files[0]))['sent']
     questions = np.load(os.path.join(dataroot, files[1]))
     answers = np.load(os.path.join(dataroot, files[2]))
@@ -244,8 +246,9 @@ def generate_tgt_vector(tgt_data_train, words):
     return word_to_inx, all_vector
 
 
-def save_import_vectors(is_save=False, is_path=False, data_type=0, is_answer=False):
+def save_import_vectors(is_save=False, is_path=False, data_type=0, is_answer=False, is_as=False):
     # save vectors into files or load vectors from files
+    # prestr = ''
     prestr = 'extended_'
 
     if data_type == 0:
@@ -287,7 +290,6 @@ def save_import_vectors(is_save=False, is_path=False, data_type=0, is_answer=Fal
 
     if is_save:
         sentences, questions, answers, _ = importData(data_type=data_type)
-        # re_sentences = replace_answer(sentences, answers) # for answer separation model
         all_sent_nodes, all_sent_nodes_type, all_sent_edges, _ = import_graph_node_edge(data_type=data_type)
 
         graph_src_vocabulary = np.load(
@@ -295,8 +297,11 @@ def save_import_vectors(is_save=False, is_path=False, data_type=0, is_answer=Fal
         graph_tgt_vocabulary = np.load(
             os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/graph_vocabulary_tgt.npy'))
 
-        word_to_inx_src, all_vector_src = generate_src_vector(sentences, graph_src_vocabulary)
-        # word_to_inx_src, all_vector_src = generate_tgt_vector(re_sentences, graph_src_vocabulary) # for answer separation model
+        if not is_as:
+            word_to_inx_src, all_vector_src = generate_src_vector(sentences, graph_src_vocabulary)
+        else:
+            re_sentences = replace_answer(sentences, answers) # for answer separation model
+            word_to_inx_src, all_vector_src = generate_tgt_vector(re_sentences, graph_src_vocabulary) # for answer separation model
         print('src vector generated!')
         _, all_vector_tgt = generate_tgt_vector(questions, graph_tgt_vocabulary)
         print('tgt vector generated!')
@@ -649,6 +654,7 @@ def end_path_tagging(data_type=0):
 def get_selected_path_tagging(data_type=0):
     # tag the sentence with ground truth path components
     sentences, questions, answers, _ = importData(data_type=data_type)
+    # prestr = ''
     prestr = 'extended_'
 
     if data_type == 0:
@@ -707,6 +713,7 @@ def get_selected_path_tagging(data_type=0):
                             cur_ques_path_tagging[w_index: w_index + len(each_path_edge_tokens)] = [1, ] * len(each_path_edge_tokens)
 
             path_tagging_list.append(cur_ques_path_tagging)
+            ith += 1
 
     np.save(os.path.join(dataroot, selected_path_tagging_file), path_tagging_list)
 
@@ -846,6 +853,7 @@ def generate_ques_node_edge_vector(all_sent_ques_nodes, all_sent_ques_edges, wor
 
 def get_valid_node_labels(data_type=0):
     _, questions, _, _ = importData(data_type=data_type)
+    # prestr = ''
     prestr = 'extended_'
 
     if data_type == 0:
@@ -925,12 +933,14 @@ def get_valid_node_labels(data_type=0):
             all_valid_edge_labels.append(cur_ques_valid_edge_labels)
             all_node_answer_end_taggings.append(cur_ques_node_answer_end_taggings)
 
-            cur_ques_valid_path_labels = list()
-            for k in range(len(cur_ques_valid_node_labels)):
-                cur_ques_valid_path_labels.append(cur_ques_valid_node_labels[k])
-                if k < len(cur_ques_valid_edge_labels):
-                    cur_ques_valid_path_labels.append(cur_ques_valid_edge_labels[k])
-            all_valid_node_labels.append(cur_ques_valid_path_labels)
+            # cur_ques_valid_path_labels = list()
+            # for k in range(len(cur_ques_valid_node_labels)):
+            #     cur_ques_valid_path_labels.append(cur_ques_valid_node_labels[k])
+            #     if k < len(cur_ques_valid_edge_labels):
+            #         cur_ques_valid_path_labels.append(cur_ques_valid_edge_labels[k])
+            # all_valid_node_labels.append(cur_ques_valid_path_labels)
+
+            all_valid_node_labels.append(cur_ques_valid_node_labels)
 
     all_valid_node_labels = np.array(all_valid_node_labels)
     all_valid_edge_labels = np.array(all_valid_edge_labels)
@@ -942,6 +952,7 @@ def get_valid_node_labels(data_type=0):
 
 def split_long_short_path_length_data(data_type=0):
 
+    # prestr = ''
     prestr = 'extended_'
 
     if data_type == 0:
@@ -983,7 +994,7 @@ def split_long_short_path_length_data(data_type=0):
     np.save(os.path.join(dataroot, long_short_data_tag_file), long_short_data_tag)
 
 
-def spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, questions, is_path=False, all_nodes_type_vector=None, answer_vector=None, sentences=None):
+def spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, questions, is_path=False, all_nodes_type_vector=None, answer_vector=None, sentences=None, is_as=False):
     # spread the all vector for each sentence
     spread_all_vector_src = list()
     spread_all_nodes_vector = list()
@@ -997,8 +1008,10 @@ def spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, all_adjace
 
     for i, each_src_tgts in enumerate(all_vector_tgt):
         for j, each_tgt in enumerate(each_src_tgts):
-            spread_all_vector_src.append(all_vector_src[i])
-            # spread_all_vector_src.append(all_vector_src[i][j])
+            if not is_as:
+                spread_all_vector_src.append(all_vector_src[i])
+            else:
+                spread_all_vector_src.append(all_vector_src[i][j])
 
             if not is_path:
                 spread_all_nodes_vector.append(all_nodes_vector[i])
@@ -1286,7 +1299,7 @@ def get_graph_batches(batch_size, all_vector_src, all_nodes_vector, all_edges_ve
                tgt_x_batches, tgt_y_batches, tgt_x_lengths, nodes_type_batches, node_answer_end_tagging_batches, answer_batches, answer_lengthes
 
 
-def get_graph_train_data(batch_size, vocabulary_src, vocabulary_tgt):
+def get_graph_train_data(batch_size, vocabulary_src, vocabulary_tgt, is_af=False, is_as=False):
     train_sentences, train_questions, train_answers, _ = importData(data_type=0)
     train_all_sent_nodes, _, train_all_sent_edges, train_all_sent_adjacency = import_graph_node_edge(data_type=0)
 
@@ -1300,14 +1313,14 @@ def get_graph_train_data(batch_size, vocabulary_src, vocabulary_tgt):
     train_graph_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/question_end_tagging.npy'))
     all_graph_tagging = np.array(train_graph_tagging)
 
-    train_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/question_selected_path_tagging.npy'))  # Upper bound model
+    if not is_af:
+        train_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/question_selected_path_tagging.npy'))  # Upper bound model
+    else:
+        train_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/train/positions.npy'))
     all_distance_tagging = np.array(train_distance_tagging)
 
-    print(len(all_answer_taggings), len(all_graph_tagging), len(all_distance_tagging))
-    print(len(all_vector_src), len(all_nodes_vector), len(all_edges_vector), len(all_vector_tgt))
-
     # spread all questions
-    all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, _, all_vector_answer, _ = spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, train_all_sent_adjacency, all_vector_tgt, train_questions, answer_vector=all_vector_answer, sentences=train_sentences)
+    all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, _, all_vector_answer, _ = spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, train_all_sent_adjacency, all_vector_tgt, train_questions, answer_vector=all_vector_answer, sentences=train_sentences, is_as=is_as)
     print(len(all_vector_src), len(all_nodes_vector), len(all_edges_vector), len(all_vector_tgt), len(all_vector_answer))
 
     params = (batch_size, all_vector_src, all_nodes_vector, all_edges_vector, \
@@ -1347,7 +1360,7 @@ def get_graph_train_data_each_epoch(params, is_shuffle=True):
            input_decode_batches, None, target_decode_batches, input_answer_batches, input_answer_lengthes
 
 
-def get_graph_val_data(batch_size, vocabulary_src, vocabulary_tgt):
+def get_graph_val_data(batch_size, vocabulary_src, vocabulary_tgt, is_af=False, is_as=False):
     val_sentences, val_questions, val_answers, _ = importData(data_type=1)
     val_all_sent_nodes, _, val_all_sent_edges, val_all_sent_adjacency = import_graph_node_edge(data_type=1)
 
@@ -1361,10 +1374,13 @@ def get_graph_val_data(batch_size, vocabulary_src, vocabulary_tgt):
     val_graph_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/question_end_tagging.npy'))
     all_graph_tagging = np.array(val_graph_tagging)
 
-    val_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/question_selected_path_tagging.npy'))
+    if not is_af:
+        val_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/question_selected_path_tagging.npy'))
+    else:
+        val_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/positions.npy'))
     all_distance_tagging = np.array(val_distance_tagging)
 
-    all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, all_questions, all_vector_answer, _ = spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, val_all_sent_adjacency, all_vector_tgt, val_questions, answer_vector=all_vector_answer, sentences=val_sentences)
+    all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, all_questions, all_vector_answer, _ = spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, val_all_sent_adjacency, all_vector_tgt, val_questions, answer_vector=all_vector_answer, sentences=val_sentences, is_as=is_as)
     print(len(all_vector_src), len(all_nodes_vector), len(all_edges_vector), len(all_vector_tgt), len(all_vector_answer))
 
     input_encode_batches, input_encode_lengths, input_nodes_batches, \
@@ -1385,7 +1401,7 @@ def get_graph_val_data(batch_size, vocabulary_src, vocabulary_tgt):
            input_decode_batches, all_questions, input_answer_batches, input_answer_lengthes
 
 
-def get_graph_test_data(batch_size, vocabulary_src, vocabulary_tgt):
+def get_graph_test_data(batch_size, vocabulary_src, vocabulary_tgt, is_af=False, is_as=False):
     test_sentences, test_questions, test_answers, _ = importData(data_type=2)
     test_all_sent_nodes, _, test_all_sent_edges, test_all_sent_adjacency = import_graph_node_edge(data_type=2)
 
@@ -1399,11 +1415,16 @@ def get_graph_test_data(batch_size, vocabulary_src, vocabulary_tgt):
     test_graph_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/question_end_tagging.npy'))
     all_graph_tagging = np.array(test_graph_tagging)
 
-    test_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/question_selected_path_tagging.npy'))
+    if not is_af:
+        test_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/question_selected_path_tagging.npy'))
+    else:
+        test_distance_tagging = np.load(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/positions.npy'))
+
     all_distance_tagging = np.array(test_distance_tagging)
 
-    all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, all_questions, all_vector_answer, all_sentences = spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, test_all_sent_adjacency, all_vector_tgt, test_questions, answer_vector=all_vector_answer, sentences=test_sentences)
+    all_vector_src, all_nodes_vector, all_edges_vector, all_adjacency, all_vector_tgt, all_questions, all_vector_answer, all_sentences = spread_vector(all_vector_src, all_nodes_vector, all_edges_vector, test_all_sent_adjacency, all_vector_tgt, test_questions, answer_vector=all_vector_answer, sentences=test_sentences, is_as=is_as)
     print(len(all_vector_src), len(all_nodes_vector), len(all_edges_vector), len(all_vector_tgt), len(all_vector_answer))
+
     spread_spice_ref_questions = list()
     for i in range(len(test_questions)):
         for j in range(len(test_questions[i])):
@@ -1585,7 +1606,7 @@ def get_path_test_data(batch_size, vocabulary_src, vocabulary_tgt):
            input_answer_tagging_batches, input_end_tagging_batches, \
            input_path_tagging_batches, input_neighbor_tagging_batches, valid_node_label_batches, \
            input_decode_batches, all_questions, input_decode_lengths, input_nodes_type_batches, \
-           input_answer_batches, spread_spice_ref_questions, all_sentences, None
+           input_answer_batches, spread_spice_ref_questions, all_sentences, input_answer_lengthes
 
 
 def generate_graph_src_vocab(src_data, src_node_data, src_edge_data, fre_bound=None, src_node_type_data=None):
@@ -1730,66 +1751,74 @@ def analyse_graph():
 
 
 if __name__ == '__main__':
-    import_graph(data_type=0)
-    import_graph(data_type=1)
-    import_graph(data_type=2)
-
-    # construct vocabulary of src and tgt
-    train_sentences, train_questions, _, _ = importData(data_type=0)
-    train_all_sent_nodes, train_all_sent_nodes_types, train_all_sent_edges, _ = import_graph_node_edge(data_type=0)
-    print('Data loaded!')
-
-    vocabulary_src = generate_graph_src_vocab(train_sentences, train_all_sent_nodes, train_all_sent_edges, fre_bound=2, src_node_type_data=train_all_sent_nodes_types)
-    vocabulary_tgt = generate_tgt_vocab(train_questions, fre_bound=2)
-    print(len(vocabulary_src), len(vocabulary_tgt))
-
-    np.save(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/graph_vocabulary_src'), vocabulary_src)
-    np.save(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/graph_vocabulary_tgt'), vocabulary_tgt)
-
-    # generate vector of src, node, edge and tgt for baseline model
-    save_import_vectors(is_save=True, data_type=0)
-    save_import_vectors(is_save=True, data_type=1)
-    save_import_vectors(is_save=True, data_type=2)
-
-    find_end_path(data_type=0)
-    find_end_path(data_type=1)
-    find_end_path(data_type=2)
-    end_path_tagging(data_type=0)
-    end_path_tagging(data_type=1)
-    end_path_tagging(data_type=2)
-    extend_node_edge_to_path(data_type=0)
-    extend_node_edge_to_path(data_type=1)
-    extend_node_edge_to_path(data_type=2)
-
-    # generate vector of src, node, edge and tgt for path-based model
-    save_import_vectors(is_save=True, is_path=True, data_type=0)
-    save_import_vectors(is_save=True, is_path=True, data_type=1)
-    save_import_vectors(is_save=True, is_path=True, data_type=2)
-
-    # Split Long Data and get long data index
-    split_long_short_path_length_data(data_type=0)
-    split_long_short_path_length_data(data_type=1)
-    split_long_short_path_length_data(data_type=2)
-
+    # import_graph(data_type=0)
+    # import_graph(data_type=1)
+    # import_graph(data_type=2)
+    #
+    # # construct vocabulary of src and tgt
+    # train_sentences, train_questions, _, _ = importData(data_type=0)
+    # print(len(train_sentences))
+    # train_all_sent_nodes, train_all_sent_nodes_types, train_all_sent_edges, _ = import_graph_node_edge(data_type=0)
+    # print(len(train_all_sent_nodes))
+    # print('Data loaded!')
+    #
+    # vocabulary_src = generate_graph_src_vocab(train_sentences, train_all_sent_nodes, train_all_sent_edges, fre_bound=2, src_node_type_data=train_all_sent_nodes_types)
+    # vocabulary_tgt = generate_tgt_vocab(train_questions, fre_bound=2)
+    # print(len(vocabulary_src), len(vocabulary_tgt))
+    # np.save(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/graph_vocabulary_src'), vocabulary_src)
+    # np.save(os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/graph_vocabulary_tgt'), vocabulary_tgt)
+    #
+    # # generate vector of src, node, edge and tgt for compared model(baseline, upper bound. answer focused, pipeline)
+    # save_import_vectors(is_save=True, data_type=0)
+    # save_import_vectors(is_save=True, data_type=1)
+    # save_import_vectors(is_save=True, data_type=2)
+    #
+    # # formulate the end and query path for path-based model
+    # find_end_path(data_type=0)
+    # find_end_path(data_type=1)
+    # find_end_path(data_type=2)
+    # end_path_tagging(data_type=0)
+    # end_path_tagging(data_type=1)
+    # end_path_tagging(data_type=2)
+    # extend_node_edge_to_path(data_type=0)
+    # extend_node_edge_to_path(data_type=1)
+    # extend_node_edge_to_path(data_type=2)
+    #
+    # # generate vector of src, node, edge and tgt for path-based model
+    # save_import_vectors(is_save=True, is_path=True, data_type=0)
+    # save_import_vectors(is_save=True, is_path=True, data_type=1)
+    # save_import_vectors(is_save=True, is_path=True, data_type=2)
+    #
+    # # Split Long Data and get complex data index
+    # split_long_short_path_length_data(data_type=0)
+    # split_long_short_path_length_data(data_type=1)
+    # split_long_short_path_length_data(data_type=2)
+    #
+    #
     # # get ground truth path component tagging for upper bound model
     # get_valid_node_labels(data_type=0)
     # get_valid_node_labels(data_type=1)
     # get_valid_node_labels(data_type=2)
-    # get_selected_path_tagging(data_type=0)
+    # get_selected_path_tagging (data_type=0)
     # get_selected_path_tagging(data_type=1)
     # get_selected_path_tagging(data_type=2)
-
+    #
+    # # get position information for answer focused model
+    # get_position(data_type=0)
+    # get_position(data_type=1)
+    # get_position(data_type=2)
+    #
     # # get our selected path component tagging for pipeline model
     # get_selected_path_tagging_ours(data_type=0)
     # get_selected_path_tagging_ours(data_type=1)
     # get_selected_path_tagging_ours(data_type=2)
-
-    # get position information for answer focused model
-    # get_position(data_type=0)
-    # get_position(data_type=1)
-    # get_position(data_type=2)
-
-    # analyse_graph()
+    #
+    # # generate vector of src, node, edge and tgt for answer separation model (need to replace answer)
+    save_import_vectors(is_save=True, data_type=0, is_as=True)
+    save_import_vectors(is_save=True, data_type=1, is_as=True)
+    save_import_vectors(is_save=True, data_type=2, is_as=True)
+    #
+    # # analyse_graph()
 
     pass
 

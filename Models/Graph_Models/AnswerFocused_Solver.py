@@ -41,7 +41,7 @@ class Generator_Solver(object):
             param_group['lr'] = param_group['lr'] * self.args.lr_decay
 
     def train(self):
-        params = get_graph_train_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
+        params = get_graph_train_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt, is_af=True)
 
         model = Generator(self.args, self.word_to_inx_src['PAD'], self.src_embeddings, self.tgt_embeddings)
 
@@ -147,7 +147,7 @@ class Test(object):
             self.input_nodes_batches, self.input_edges_batches, self.input_adj_batches, \
             self.input_answer_tagging_batches, self.input_graph_tagging_batches, self.input_distance_tagging_batches, \
             self.input_neighbor_tagging_batches, self.input_decode_batches, self.all_questions, \
-            self.input_answer_batches, _ = get_graph_val_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
+            self.input_answer_batches, _ = get_graph_val_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt, is_af=True)
             self.long_data_indexes = np.load(
                 os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/val/long_data_piece_index.npy')).tolist()
         else:
@@ -156,7 +156,7 @@ class Test(object):
             self.input_nodes_batches, self.input_edges_batches, self.input_adj_batches, \
             self.input_answer_tagging_batches, self.input_graph_tagging_batches, self.input_distance_tagging_batches, \
             self.input_neighbor_tagging_batches, self.input_decode_batches, self.all_questions, \
-            self.input_answer_batches, self.input_answer_lengthes, self.all_sentences, self.spread_spice_ref_questions = get_graph_test_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt)
+            self.input_answer_batches, self.input_answer_lengthes, self.all_sentences, self.spread_spice_ref_questions = get_graph_test_data(self.args.batch_size, self.vocabulary_src, self.vocabulary_tgt, is_af=True)
             self.long_data_indexes = np.load(
                 os.path.join(dataroot, './processed/SQuAD1.0/Graph_Analysis/SceneGraph/test/long_data_piece_index.npy')).tolist()
 
