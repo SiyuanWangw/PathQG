@@ -30,7 +30,7 @@ class Generator(nn.Module):
         self.encoder_backward_lstm_cell = nn.LSTMCell(self.args.embedding_size,
                                              self.args.entity_encoder_hidden_size)
 
-        self.decoder_lstm_cell = nn.LSTMCell(self.args.embedding_size,
+        self.decoder_lstm_cell = nn.LSTMCell(self.args.embedding_size + self.args.entity_dense_size*2,
                                              self.args.decoder_hidden_size)
 
         self.sentence_attn = BahdanauAttention(self.args.entity_encoder_hidden_size*2, self.args.encoder_hidden_size * 2,
@@ -155,7 +155,7 @@ class Generator(nn.Module):
         return logits
 
     def decoder(self, tgt_input, init_hidden, encoder_outputs, posterior_L):
-        init_context = Variable(encoder_outputs.data.new(tgt_input.size(0), self.args.entity_dense_size).zero_(),
+        init_context = Variable(encoder_outputs.data.new(tgt_input.size(0), self.args.entity_dense_size*2).zero_(),
                                 requires_grad=False)
 
         logits = []
@@ -180,6 +180,7 @@ class Generator(nn.Module):
             alpha_2, cur_context_2 = self.decoder_entity_attn(h_t, posterior_L)
             concat_output = torch.cat([h_t.unsqueeze(1), cur_context_1, cur_context_2], -1)
             outputs.append(concat_output)
+            cur_context = torch.cat([cur_context_1, cur_context_2], -1).squeeze(1)
             # concat output size: 64*1*1500
 
             tanh_fc = F.relu(self.dense(concat_output))
@@ -194,18 +195,31 @@ class Generator(nn.Module):
 
         return logits, outputs
 
-    def test_decoder(self, cur_input, init_hidden):
-        input_embed = self.dropout(self.tgt_embedding(cur_input))
-        h_t, c_t = self.decoder_lstm_cell(input_embed, init_hidden)
-        h_t = self.dropout(h_t)
-        init_hidden = (h_t, c_t)
-
-        if h_t.size(0) == self.args.batch_size:
+    def test_decoder(self, cur_input, init_hidden, t):
+        if cur_input.size(0) == self.args.batch_size:
             encoder_outputs = self.encoder_outputs
             prior_L = self.prior_L
         else:
             encoder_outputs = torch.cat([self.encoder_outputs.unsqueeze(1),]*self.args.beam_size, 1).view(-1, self.encoder_outputs.size(1), self.encoder_outputs.size(2))
             prior_L = torch.cat([self.prior_L.unsqueeze(1),]*self.args.beam_size, 1).view(-1, self.prior_L.size(1), self.prior_L.size(2))
+
+        if t == 0:
+            cur_context = Variable(
+                init_hidden[0].data.new(cur_input.size(0), self.args.entity_dense_size*2).zero_(),
+                requires_grad=False)
+        else:
+            _, cur_context_1 = self.decoder_sentence_attn(init_hidden[0], encoder_outputs)
+            _, cur_context_2 = self.decoder_entity_attn(init_hidden[0], prior_L)
+            cur_context = torch.cat([cur_context_1, cur_context_2], -1).squeeze(1)
+
+        if not self.args.attn_input_feed:
+            input_embed = self.dropout(self.tgt_embedding(cur_input))
+        else:
+            input_embed = self.dropout(torch.cat([self.tgt_embedding(cur_input), cur_context], -1))
+
+        h_t, c_t = self.decoder_lstm_cell(input_embed, init_hidden)
+        h_t = self.dropout(h_t)
+        init_hidden = (h_t, c_t)
 
         alpha_1, cur_context_1 = self.decoder_sentence_attn(h_t, encoder_outputs)
         _, cur_context_2 = self.decoder_entity_attn(h_t, prior_L)
@@ -248,6 +262,9 @@ class Generator(nn.Module):
 
                 fw_outputs.append(fw_h_t_skip.unsqueeze(1))
                 bw_outputs.append(bw_h_t_skip.unsqueeze(1))
+
+            # fw_outputs.append(fw_h_t.unsqueeze(1))
+            # bw_outputs.append(bw_h_t.unsqueeze(1))
 
 
         init_h = torch.cat([fw_h_t, bw_h_t], -1)
@@ -314,7 +331,7 @@ class BeamSearch(object):
         output_list = []
         for i in range(length):
             self.time = i
-            word_prob, next_state, output = cell(word, state)
+            word_prob, next_state, output = cell(word, state, self.time)
             word, state, output = self.step(next_state, word_prob, output)
             word_list.append(word)
             output_list.append(output)
