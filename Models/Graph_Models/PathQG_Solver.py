@@ -6,7 +6,7 @@ import torch.optim as optim
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-from Our_Models.PathQG_Model_v2 import Generator  # PathQG
+from Our_Models.PathQG_Model import Generator  # PathQG
 import sys
 sys.path.append('..')
 sys.path.append('../..')
