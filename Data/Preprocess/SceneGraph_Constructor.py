@@ -238,7 +238,7 @@ def enrich_graphs(data_type=0):
 
     total_added_edges_num = 0
     sentences, questions, _, _ = importData(data_type=data_type)
-    # entities, _, entities_span_bounds, entities_type = import_entity_data(data_type=data_type, is_connected=True, is_span_bounds=True)
+
     for i in tqdm(range(len(graphs))):
         each_graph = graphs[i]
         sent_words_list = nltk.word_tokenize(sentences[i])
@@ -271,6 +271,7 @@ def enrich_graphs(data_type=0):
                     relation = extract_relation(sent_words_list[start_index: end_index],
                                                                   pos_taggings[start_index: end_index])
                     if relation is not None:
+                        # print(j, relation)
                         relationText, relationType = relation
                         each_graph.extend_graph_edge(relationText, relationType, each_graph.node_list[j], each_graph.node_list[j+1])
 

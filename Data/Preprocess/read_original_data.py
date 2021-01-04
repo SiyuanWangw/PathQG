@@ -1,3 +1,4 @@
+# preprocess the original data and split it into training/validation/test sets
 import json
 import nltk
 import numpy as np
@@ -152,13 +153,16 @@ def map_answers(qa_pairs ,type = 0):
     answers = list()
     index_list = list()
     index = 0
-    with open(tgt_file, "r", ) as f:
+    with open(tgt_file, "r") as f:
         for line in f.readlines():
-            content = line.strip().lower()
-            if content in qa_pairs:
-                answers.append(qa_pairs[content])
-                index_list.append(index)
-            index += 1
+            try:
+                content = line.strip().lower()
+                if content in qa_pairs:
+                    answers.append(qa_pairs[content])
+                    index_list.append(index)
+                index += 1
+            except ValueError:
+                pass
         return answers, index_list
 
 
@@ -242,7 +246,7 @@ def calculate_distribution():
 
 if __name__ == '__main__':
     src_train, src_dev, src_test, tgt_train, tgt_dev, tgt_test = importData()
-    print(len(src_train), len(tgt_train), len(src_dev))
+    print(len(src_train), len(tgt_train), len(src_dev), len(src_test))
 
     # training data
     qa_dict_train = extract_qas(type=0)
@@ -282,10 +286,3 @@ if __name__ == '__main__':
     print(len(sentences), len(questions), len(answers), len(answers_start))
     print(sum(list(map(len, questions))), sum(list(map(len, answers))), sum(list(map(len, answers_start))))
     calculate_distribution()
-
-
-
-
-
-
-
